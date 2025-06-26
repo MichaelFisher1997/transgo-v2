@@ -1,11 +1,3 @@
-# Ignore Docker files
-Dockerfile
-docker-compose.yml
-
-# Ignore lock files
-flake.lock
-flake.nix
-
 # Ignore media files
 media/
 
