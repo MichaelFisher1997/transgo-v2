@@ -1,0 +1,37 @@
+{{ define "library" }}
+{{ template "base" . }}
+{{ end }}
+
+{{ define "content" }}
+<div class="container mx-auto px-4 py-8">
+  <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Media Library</h1>
+  
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    {{ range . }}
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+      <a href="/media/{{ .ID }}">
+        {{ if .PosterPath.Valid }}
+        <img src="{{ .PosterPath.String }}" alt="{{ .Title }}" class="w-full h-64 object-cover">
+        {{ else }}
+        <img src="/static/images/placeholder.png" alt="{{ .Title }}" class="w-full h-64 object-cover bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400">
+        {{ end }}
+        <div class="p-4">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-white">{{ .Title }}</h2>
+          <div class="flex justify-between items-center mt-2">
+            <span class="text-yellow-500">{{ if .Rating.Valid }}{{ .Rating.String }}/10{{ else }}N/A{{ end }}</span>
+            <span class="text-gray-600 dark:text-gray-300">{{ if .Year.Valid }}{{ .Year.Int64 }}{{ else }}N/A{{ end }}</span>
+          </div>
+        </div>
+      </a>
+    </div>
+    {{ end }}
+  </div>
+
+  <div class="mt-8">
+    <button hx-post="/scan" hx-swap="none" 
+      class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+      Scan Media Library
+    </button>
+  </div>
+</div>
+{{ end }}

@@ -1,0 +1,54 @@
+package pages
+
+import (
+	"app/views/layouts"
+	"app/models"
+	"fmt"
+)
+
+templ Season(tvshow models.TVShow, season models.Season, episodes []models.Episode) {
+	@layouts.Base(seasonContent(tvshow, season, episodes))
+}
+
+templ seasonContent(tvshow models.TVShow, season models.Season, episodes []models.Episode) {
+	<div class="container mx-auto px-4 py-8">
+		<div class="mb-8">
+			<h1 class="text-3xl font-bold text-gray-900 dark:text-white">{tvshow.Title} - {season.Title}</h1>
+		</div>
+
+		<div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+			<h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Episodes</h2>
+			<div class="divide-y divide-gray-200 dark:divide-gray-700">
+				for _, episode := range episodes {
+					<div class="py-4">
+						<div class="flex items-center">
+							<div class="w-12 text-center">
+								<span class="text-lg font-semibold text-gray-700 dark:text-gray-300">{fmt.Sprint(episode.Number)}</span>
+							</div>
+							<div class="ml-4 flex-grow">
+								<h3 class="text-lg font-semibold text-gray-900 dark:text-white">{episode.Title}</h3>
+								if episode.Rating.Valid {
+									<div class="text-yellow-500 text-sm">{episode.Rating.String}/10</div>
+								}
+							</div>
+							<div>
+								<a href={templ.SafeURL(episode.Path)} class="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+									Watch
+								</a>
+							</div>
+						</div>
+					</div>
+				}
+			</div>
+		</div>
+
+		<div class="mt-8 flex space-x-4">
+			<a href={templ.SafeURL(fmt.Sprintf("/tvshow/%d", tvshow.ID))} class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+				Back to {tvshow.Title}
+			</a>
+			<a href="/tvshows" class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">
+				All TV Shows
+			</a>
+		</div>
+	</div>
+}

@@ -1,0 +1,57 @@
+package pages
+
+import (
+	"app/views/layouts"
+	"app/models"
+	"fmt"
+)
+
+templ TVShows(tvshows []models.TVShow) {
+	@layouts.Base(tvshowsContent(tvshows))
+}
+
+templ tvshowsContent(tvshows []models.TVShow) {
+	<div class="container mx-auto px-4 py-8">
+		<h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">TV Shows</h1>
+		
+		<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+			for _, tvshow := range tvshows {
+				<div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+					<a href={templ.SafeURL(fmt.Sprintf("/tvshow/%d", tvshow.ID))}>
+						if tvshow.PosterPath.Valid {
+							<img src={tvshow.PosterPath.String} alt={tvshow.Title} class="w-full h-64 object-cover" />
+						} else {
+							<img src="/static/images/placeholder.png" alt={tvshow.Title} class="w-full h-64 object-cover bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400" />
+						}
+						<div class="p-4">
+							<h2 class="text-xl font-semibold text-gray-900 dark:text-white">{tvshow.Title}</h2>
+							<div class="flex justify-between items-center mt-2">
+								<span class="text-yellow-500">
+									if tvshow.Rating.Valid {
+										{tvshow.Rating.String}/10
+									} else {
+										N/A
+									}
+								</span>
+								<span class="text-gray-600 dark:text-gray-300">
+									if tvshow.Year.Valid {
+										{fmt.Sprint(tvshow.Year.Int64)}
+									} else {
+										N/A
+									}
+								</span>
+							</div>
+						</div>
+					</a>
+				</div>
+			}
+		</div>
+
+		<div class="mt-8">
+			<button hx-post="/scan" hx-swap="none" 
+				class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+				Scan Media Library
+			</button>
+		</div>
+	</div>
+}

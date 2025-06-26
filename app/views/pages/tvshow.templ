@@ -1,0 +1,73 @@
+package pages
+
+import (
+	"app/views/layouts"
+	"app/models"
+	"fmt"
+)
+
+templ TVShow(tvshow models.TVShow, seasons []models.Season) {
+	@layouts.Base(tvshowContent(tvshow, seasons))
+}
+
+templ tvshowContent(tvshow models.TVShow, seasons []models.Season) {
+	<div class="container mx-auto px-4 py-8">
+		<div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden mb-8">
+			<div class="md:flex">
+				<div class="md:w-1/3">
+					if tvshow.PosterPath.Valid {
+						<img src={tvshow.PosterPath.String} alt={tvshow.Title} class="w-full h-auto" />
+					} else {
+						<img src="/static/images/placeholder.png" alt={tvshow.Title} class="w-full h-auto" />
+					}
+				</div>
+				<div class="p-8 md:w-2/3">
+					<h1 class="text-3xl font-bold text-gray-900 dark:text-white">{tvshow.Title}</h1>
+					<div class="flex items-center mt-2">
+						<span class="text-yellow-500">
+							if tvshow.Rating.Valid {
+								{tvshow.Rating.String}/10
+							} else {
+								N/A
+							}
+						</span>
+						<span class="mx-2 text-gray-400">|</span>
+						<span class="text-gray-600 dark:text-gray-300">
+							if tvshow.Year.Valid {
+								{fmt.Sprint(tvshow.Year.Int64)}
+							} else {
+								N/A
+							}
+						</span>
+					</div>
+					<p class="mt-4 text-gray-600 dark:text-gray-300">
+						if tvshow.Description.Valid {
+							{tvshow.Description.String}
+						} else {
+							No description available.
+						}
+					</p>
+				</div>
+			</div>
+		</div>
+
+		<h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Seasons</h2>
+		<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+			for _, season := range seasons {
+				<div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+					<a href={templ.SafeURL(fmt.Sprintf("/tvshow/%d/season/%d", tvshow.ID, season.Number))}>
+						<div class="p-6">
+							<h3 class="text-xl font-semibold text-gray-900 dark:text-white">{season.Title}</h3>
+						</div>
+					</a>
+				</div>
+			}
+		</div>
+
+		<div class="mt-8">
+			<a href="/tvshows" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+				Back to TV Shows
+			</a>
+		</div>
+	</div>
+}

@@ -1,0 +1,83 @@
+package layouts
+
+import "app/views/components"
+
+templ Base(content templ.Component) {
+	<!DOCTYPE html>
+	<html lang="en" class="h-full">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Transogo Media</title>
+		<script src="https://unpkg.com/htmx.org@1.9.6"></script>
+		<script src="https://cdn.tailwindcss.com"></script>
+		<link rel="stylesheet" href="/static/css/styles.css" />
+	</head>
+	<body class="h-full bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+		@components.Nav()
+		<main class="min-h-full">
+			@content
+		</main>
+		<script>
+			// On page load, check for saved theme
+			document.addEventListener('DOMContentLoaded', () => {
+				// Check if user has a saved preference
+				const savedTheme = localStorage.getItem('theme');
+				
+				// Apply saved theme or use system preference as fallback
+				if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+					document.documentElement.classList.add('dark');
+				} else {
+					document.documentElement.classList.remove('dark');
+				}
+				
+				// Update icon based on current theme
+				updateThemeIcon();
+			});
+
+			// Theme toggle functionality
+			const themeToggle = document.getElementById('theme-toggle');
+			if (themeToggle) {
+				themeToggle.addEventListener('click', () => {
+					// Toggle dark class
+					document.documentElement.classList.toggle('dark');
+					
+					// Save preference to localStorage
+					if (document.documentElement.classList.contains('dark')) {
+						localStorage.setItem('theme', 'dark');
+					} else {
+						localStorage.setItem('theme', 'light');
+					}
+					
+					// Update icon
+					updateThemeIcon();
+				});
+			}
+
+			// Function to update the icon based on current theme
+			function updateThemeIcon() {
+				const isDark = document.documentElement.classList.contains('dark');
+				const iconContainer = document.getElementById('theme-toggle');
+				
+				// Clear existing icon
+				if (iconContainer) {
+					iconContainer.innerHTML = '';
+					
+					// Add appropriate icon based on theme
+					if (isDark) {
+						// Moon icon for dark mode
+						iconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+						</svg>`;
+					} else {
+						// Sun icon for light mode
+						iconContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m8.66-15.66l-.707.707M4.34 19.66l-.707.707M21 12h-1M4 12H3m15.66 8.66l-.707-.707M4.34 4.34l-.707-.707" />
+						</svg>`;
+					}
+				}
+			}
+		</script>
+	</body>
+	</html>
+}

@@ -1,0 +1,15 @@
+package pages
+
+import (
+	"context"
+	"io"
+
+	"app/views/layouts"
+)
+
+templ Home() {
+	@layouts.Base(templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+		_, err := io.WriteString(w, `<h1>Welcome to Transogo</h1><p>Your personal media library.</p><p>Explore your movies and TV shows using the navigation above.</p>`)
+		return err
+	}))
+}
