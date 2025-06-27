@@ -1,0 +1,45 @@
+name: App Deployment
+
+on:
+  push:
+    branches: [main, dev]
+    paths:
+      - 'app/**'
+      - 'Dockerfile'
+      - 'go.mod'
+
+jobs:
+  deploy:
+    name: Deploy App
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ github.ref_name == 'main' && 'us-east-1' || 'us-east-1' }}
+
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ steps.login-ecr.outputs.registry }}/${{ github.repository }}:${{ github.sha }} .
+          
+      - name: Push to ECR
+        run: |
+          docker push ${{ steps.login-ecr.outputs.registry }}/${{ github.repository }}:${{ github.sha }}
+
+      - name: Update ECS Service
+        run: |
+          aws ecs update-service \
+            --cluster ${{ github.ref_name == 'main' && 'prod-cluster' || 'dev-cluster' }} \
+            --service ${{ github.ref_name == 'main' && 'prod-service' || 'dev-service' }} \
+            --force-new-deployment
