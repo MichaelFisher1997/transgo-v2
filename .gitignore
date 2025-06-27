@@ -5,3 +5,10 @@ media/
 
 # Ignore build artifacts
 app/static/
+
+# Ignore generated files
+app/views/**/*_templ.go
+app/views/**/*.templ
+myapp
+app/app
+app/transogo
