@@ -4,10 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
-	"strings"
 
-	"app/models"
+	"transogov2/app/models"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -179,50 +177,4 @@ func (r *Repository) SaveEpisode(ctx context.Context, episode *models.Episode) (
 	var id int64
 	err := r.db.QueryRowxContext(ctx, query, episode.SeasonID, episode.Number, episode.Title, episode.Path, episode.FileSize).Scan(&id)
 	return id, err
-}
-
-// ExtractEpisodeInfo attempts to extract season and episode numbers from a filename
-func ExtractEpisodeInfo(filename string) (int, int, string) {
-	// Common patterns: S01E01, 1x01, Season 1 Episode 1, etc.
-	base := filepath.Base(filename)
-	title := strings.TrimSuffix(base, filepath.Ext(base))
-
-	// Try to find season and episode numbers
-	seasonNum := 1
-	episodeNum := 0
-
-	// Pattern: S01E01
-	if strings.Contains(strings.ToUpper(title), "S") && strings.Contains(strings.ToUpper(title), "E") {
-		parts := strings.Split(strings.ToUpper(title), "E")
-		if len(parts) > 1 {
-			sPart := parts[0]
-			sIndex := strings.LastIndex(sPart, "S")
-			if sIndex != -1 && sIndex+1 < len(sPart) {
-				fmt.Sscanf(sPart[sIndex+1:], "%d", &seasonNum)
-			}
-			fmt.Sscanf(parts[1], "%d", &episodeNum)
-		}
-	}
-
-	// Pattern: 1x01
-	if episodeNum == 0 && strings.Contains(title, "x") {
-		parts := strings.Split(title, "x")
-		if len(parts) > 1 {
-			fmt.Sscanf(parts[0], "%d", &seasonNum)
-			fmt.Sscanf(parts[1], "%d", &episodeNum)
-		}
-	}
-
-	// Pattern: E01 (assume season 1 if only episode is specified)
-	if episodeNum == 0 && strings.Contains(strings.ToUpper(title), "E") {
-		eIndex := strings.Index(strings.ToUpper(title), "E")
-		if eIndex != -1 && eIndex+1 < len(title) {
-			fmt.Sscanf(title[eIndex+1:], "%d", &episodeNum)
-		}
-	}
-
-	// If we couldn't extract episode number, default to 0
-	// This will need manual correction
-
-	return seasonNum, episodeNum, title
 }

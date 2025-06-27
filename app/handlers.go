@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"app/models"
-	"app/views/pages"
+	"transogov2/app/models"
+	"transogov2/app/views/pages"
 )
 
 // Handlers holds the repository dependencies

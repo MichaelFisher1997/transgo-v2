@@ -7,9 +7,10 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
-	"app/models"
+	"transogov2/app/models"
 )
 
 // MediaFile represents a media file
@@ -243,33 +244,47 @@ func scanEpisodes(repo MediaRepository, seasonID int64, seasonPath string) {
 
 // cleanTitle removes file extensions and common suffixes from a title
 func cleanTitle(filename string) string {
+	// Handle hidden files like ".bashrc" or ".gitignore"
+	if strings.HasPrefix(filename, ".") && !strings.Contains(filename[1:], ".") {
+		return filename
+	}
+
 	// Remove file extension
 	title := strings.TrimSuffix(filename, filepath.Ext(filename))
 
-	// Remove common suffixes like (1080p), [HD], etc.
+	// Define a more comprehensive set of suffix patterns to remove
+	// Order matters: more specific patterns first
 	suffixPatterns := []string{
-		`\(\d{4}\)`,      // (2020)
-		`\[\d{4}\]`,      // [2020]
-		`\(\s*\d+p\s*\)`, // (1080p)
-		`\[\s*\d+p\s*\]`, // [1080p]
-		`\(\s*HD\s*\)`,   // (HD)
-		`\[\s*HD\s*\]`,   // [HD]
-		`\.\d{4}\.\d+p`,  // .2020.1080p
-		`\s+-\s+\d+p`,    // - 1080p
-		`BluRay`,         // BluRay
-		`WEB-DL`,         // WEB-DL
-		`WEBRip`,         // WEBRip
-		`x264`,           // x264
-		`x265`,           // x265
-		`HEVC`,           // HEVC
-		`AAC`,            // AAC
-		`YIFY`,           // YIFY
-		`RARBG`,          // RARBG
-		`-RARBG`,         // -RARBG
+		`(?i)\s*\[\s*\d{3,4}p\s*\]`, // [1080p], [720p]
+		`(?i)\s*\(\s*\d{3,4}p\s*\)`, // (1080p), (720p)
+		`(?i)\s*-\s*\d{3,4}p`,       // - 1080p
+		`(?i)\s*\d{3,4}p`,           // 1080p (without leading dash/space)
+		`(?i)\s*\[\s*HD\s*\]`,       // [HD]
+		`(?i)\s*\(\s*HD\s*\)`,       // (HD)
+		`(?i)\s*BluRay`,             // BluRay
+		`(?i)\s*WEB-DL`,             // WEB-DL
+		`(?i)\s*WEBRip`,             // WEBRip
+		`(?i)\s*HDRip`,              // HDRip
+		`(?i)\s*BDRip`,              // BDRip
+		`(?i)\s*DVDRip`,             // DVDRip
+		`(?i)\s*x264`,               // x264
+		`(?i)\s*x265`,               // x265
+		`(?i)\s*HEVC`,               // HEVC
+		`(?i)\s*AAC`,                // AAC
+		`(?i)\s*AC3`,                // AC3
+		`(?i)\s*DTS`,                // DTS
+		`(?i)\s*YIFY`,               // YIFY
+		`(?i)\s*RARBG`,              // RARBG
+		`(?i)\s*-RARBG`,             // -RARBG
+		`(?i)\s*\[[^\]]+\]`,         // [Anything in brackets]
+		`(?i)\s*\([^\)]+\)`,         // (Anything in parentheses)
+		`(?i)\s*-\s*[^-\s]+$`,       // - GroupName at the end
+		`(?i)\s*\.\s*[^.\s]+$`,      // .GroupName at the end
+		`(?i)\s*\d{4}`,              // Year like 2023 (should be after resolution/quality)
 	}
 
 	for _, pattern := range suffixPatterns {
-		re := regexp.MustCompile(`(?i)` + pattern)
+		re := regexp.MustCompile(pattern)
 		title = re.ReplaceAllString(title, "")
 	}
 
@@ -284,4 +299,43 @@ func cleanTitle(filename string) string {
 	title = strings.TrimRight(title, " -")
 
 	return title
+}
+
+// ExtractEpisodeInfo extracts episode number and title from a file path
+func ExtractEpisodeInfo(filePath string) (seasonNum, episodeNum int, title string) {
+	// Example: "TV.Show.S01E05.Episode.Title.mp4"
+	// Example: "TV.Show.Season.1.Episode.5.Episode.Title.mp4"
+	// Example: "TV.Show.E05.Episode.Title.mp4" (assuming single season)
+
+	filename := filepath.Base(filePath)
+	cleanedTitle := cleanTitle(filename) // Use the existing cleanTitle function
+
+	// Regex to find SXXEXX or Season X Episode X patterns
+	re := regexp.MustCompile(`(?i)(s(\d+))?e(\d+)\.?(.+)`)
+	matches := re.FindStringSubmatch(cleanedTitle)
+
+	if len(matches) > 4 {
+		// Found SXXEXX or EXX pattern
+		if matches[2] != "" {
+			seasonNum, _ = strconv.Atoi(matches[2])
+		} else {
+			seasonNum = 1 // Default to season 1 if not specified
+		}
+		episodeNum, _ = strconv.Atoi(matches[3])
+		title = strings.TrimSpace(strings.ReplaceAll(matches[4], ".", " "))
+	} else {
+		// Fallback if no clear SXXEXX or EXX pattern, try to extract just episode number
+		re = regexp.MustCompile(`(?i)episode\.?(\d+)\.?(.+)`)
+		matches = re.FindStringSubmatch(cleanedTitle)
+		if len(matches) > 2 {
+			episodeNum, _ = strconv.Atoi(matches[1])
+			title = strings.TrimSpace(strings.ReplaceAll(matches[2], ".", " "))
+		} else {
+			// No clear episode info, use cleaned filename as title
+			title = cleanedTitle
+			episodeNum = 0 // Indicate no episode number found
+		}
+	}
+
+	return seasonNum, episodeNum, title
 }

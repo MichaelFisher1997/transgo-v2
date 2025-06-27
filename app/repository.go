@@ -1,8 +1,8 @@
 package main
 
 import (
-	"app/models"
 	"context"
+	"transogov2/app/models"
 )
 
 // Repository defines the methods for database operations
