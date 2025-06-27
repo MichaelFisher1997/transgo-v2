@@ -1,4 +1,12 @@
-# TransGo Media Manager
+# TransGo Media Manager (Early Alpha)
+
+🚧 **Warning: Early Development Stage** 🚧  
+This project is currently in active development. Expect:
+- Breaking changes
+- Missing features
+- Potential instability
+
+We welcome contributors and early testers, but please don't use in production yet.
 
 A modern media management system with powerful encoding capabilities.
 
