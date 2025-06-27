@@ -7,7 +7,10 @@
   "required_pull_request_reviews": {
     "required_approving_review_count": 1
   },
-  "restrictions": null,
+  "restrictions": {
+    "users": [],
+    "teams": []
+  },
   "allow_force_pushes": false,
   "allow_deletions": false
 }
