@@ -1,1 +1,4 @@
-encryptionsalt: v1:A1Zwr9i83nQ=:v1:QAO6vwmJ2fbzeTli:zJ/ZUm1raE+m3IQMn88M6ygBNouiKQ==
+encryptionsalt: v1:ttMIO3K7IHA=:v1:IB1hlAv0ZeEBH07g:tvvOmBinGF8W+rUdkz7DWtEo8P1Ugg==
+config:
+  transgo-infra:passphrase:
+    secure: v1:qffCH+4FxEoJFeMS:jTT59d9TcCMSwXIbdP+6yOf/4A==
