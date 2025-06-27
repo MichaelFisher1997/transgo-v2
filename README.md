@@ -12,11 +12,11 @@ Transogo Media is a media management application that allows users to organize a
 
 2. Build and run the application using Docker:
    ```bash
-   docker-compose up --build
+   docker-compose up --build -d
    ```
 
 ## Usage
-- Access the application in your web browser at `http://localhost:3000`.
+- Access the application in your web browser at `http://localhost:8080`.
 - Use the theme toggle button to switch between light and dark modes.
 
 ## Contributing

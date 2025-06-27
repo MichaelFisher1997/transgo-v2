@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   app:
     build:
@@ -6,17 +8,19 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./media:/media
-      - ./app/media:/app/media
+      - ./media:/app/media
+      - ./app/static:/app/static:ro
+      - ./app/views:/app/views:ro
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME}
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - DB_NAME=${DB_NAME:-media_library}
+    restart: unless-stopped
 
   postgres:
     image: postgres:15-alpine
@@ -24,16 +28,17 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./app/schema.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./app/schema.sql:/docker-entrypoint-initdb.d/init.sql:ro
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
+      - POSTGRES_DB=${DB_NAME:-media_library}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-media_library}"]
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
 volumes:
   postgres_data:

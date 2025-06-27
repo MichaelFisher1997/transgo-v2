@@ -5,64 +5,67 @@ import (
 	"log"
 	"net/http"
 	"os"
-
-	"github.com/jmoiron/sqlx"
 )
 
-//go:embed static
-var staticFiles embed.FS
+//go:embed views
+var viewsFS embed.FS
 
-var db *sqlx.DB
+// Static file directory
+const staticDir = "./static"
 
 func main() {
-	// Initialize database
+	// Load database configuration
 	cfg := NewConfig()
-	var err error
-	db, err = NewDB(cfg)
+
+	// Connect to the database
+	database, err := NewDB(cfg)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
-	defer db.Close()
+	defer database.Close()
 
-	// Create repository
-	repo := NewRepository(db)
+	// Initialize repository
+	repo := NewRepository(database)
 
-	// Create handlers
+	// Initialize handlers
 	handlers := NewHandlers(repo)
 
-	// Set up routes
-	http.HandleFunc("/", handlers.LibraryHandler)
-	http.HandleFunc("/movies", handlers.MoviesHandler)
-	http.HandleFunc("/tvshows", handlers.TVShowsHandler)
-	http.HandleFunc("/tvshow/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/tvshow/" {
-			http.Redirect(w, r, "/tvshows", http.StatusFound)
+	// Setup HTTP routes
+	mux := http.NewServeMux()
+
+	// Application routes
+	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
 			return
 		}
-
-		// Check if it's a season request
-		if len(r.URL.Path) >= 15 && r.URL.Path[8:15] == "/season" {
-			handlers.SeasonHandler(w, r)
+		if r.Method != http.MethodGet {
+			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 			return
 		}
+		handlers.LibraryHandler(w, r)
+	}))
+	mux.HandleFunc("GET /movies", handlers.MoviesHandler)
 
-		handlers.TVShowHandler(w, r)
-	})
-	http.HandleFunc("/media/", handlers.MediaHandler)
-	http.HandleFunc("/scan", handlers.ScanHandler)
-	http.HandleFunc("/hello", handlers.HelloHandler)
-	http.HandleFunc("/standalone", handlers.StandaloneHandler)
+	// Serve static files directly from filesystem
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))
+	mux.HandleFunc("GET /tvshows", handlers.TVShowsHandler)
+	mux.HandleFunc("GET /tvshow/{id}/season/{seasonNum}", handlers.SeasonHandler)
+	mux.HandleFunc("GET /tvshow/{id}", handlers.TVShowHandler)
+	mux.HandleFunc("GET /media/{id}", handlers.MediaHandler)
+	mux.HandleFunc("POST /scan", handlers.ScanHandler)
+	mux.HandleFunc("GET /hello", handlers.HelloHandler)
+	mux.HandleFunc("GET /standalone", handlers.StandaloneHandler)
 
-	// Serve static files
-	http.Handle("/static/", http.FileServer(http.FS(staticFiles)))
-
-	// Start server
+	// Start the server
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
-	log.Printf("Server starting on port %s", port)
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+	log.Printf("Server listening on :%s", port)
+	if err := http.ListenAndServe(":"+port, mux); err != nil {
+		log.Fatalf("Server failed to start: %v", err)
 	}
 }
+
+// Other existing code in main.go can remain unchanged

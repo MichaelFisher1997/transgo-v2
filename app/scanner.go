@@ -23,6 +23,7 @@ func ScanMediaDirectory(dir, mediaType string) ([]MediaFile, error) {
 	var files []MediaFile
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
+			log.Printf("Error walking path %s: %v", path, err)
 			return err
 		}
 		if !info.IsDir() {
@@ -34,7 +35,11 @@ func ScanMediaDirectory(dir, mediaType string) ([]MediaFile, error) {
 		}
 		return nil
 	})
-	return files, err
+	if err != nil {
+		log.Printf("Error walking directory %s: %v", dir, err)
+		return nil, err
+	}
+	return files, nil
 }
 
 // isVideoFile checks if a file extension is a video format
@@ -49,21 +54,19 @@ func isVideoFile(ext string) bool {
 }
 
 // ScanMedia scans all media directories
-func ScanMedia() {
-	repo := NewRepository(db)
+func ScanMedia(repo MediaRepository, moviesDir, tvDir string) {
 
 	// Scan movies
-	ScanMovies(repo)
+	ScanMovies(repo, moviesDir)
 
 	// Scan TV shows
-	ScanTVShows(repo)
+	ScanTVShows(repo, tvDir)
 
 	fmt.Println("Media scan complete")
 }
 
 // ScanMovies scans the movies directory
-func ScanMovies(repo *Repository) {
-	moviesDir := "/media/movies"
+func ScanMovies(repo MediaRepository, moviesDir string) {
 	movies, err := ScanMediaDirectory(moviesDir, models.MediaTypeMovie)
 	if err != nil {
 		log.Printf("Scan failed for %s: %v", moviesDir, err)
@@ -90,8 +93,7 @@ func ScanMovies(repo *Repository) {
 }
 
 // ScanTVShows scans the TV shows directory
-func ScanTVShows(repo *Repository) {
-	tvDir := "/media/tv"
+func ScanTVShows(repo MediaRepository, tvDir string) {
 
 	// Get all TV show directories
 	tvShows, err := os.ReadDir(tvDir)
@@ -130,7 +132,7 @@ func ScanTVShows(repo *Repository) {
 }
 
 // scanSeasons scans for seasons within a TV show directory
-func scanSeasons(repo *Repository, tvShowID int64, tvShowPath string) {
+func scanSeasons(repo MediaRepository, tvShowID int64, tvShowPath string) {
 	// Check for season directories
 	entries, err := os.ReadDir(tvShowPath)
 	if err != nil {
@@ -206,7 +208,7 @@ func scanSeasons(repo *Repository, tvShowID int64, tvShowPath string) {
 }
 
 // scanEpisodes scans for episodes within a season directory
-func scanEpisodes(repo *Repository, seasonID int64, seasonPath string) {
+func scanEpisodes(repo MediaRepository, seasonID int64, seasonPath string) {
 	// Get all files in the season directory
 	files, err := ScanMediaDirectory(seasonPath, models.MediaTypeTVShow)
 	if err != nil {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os" // Added for environment variables
 	"strconv"
 	"strings"
 
@@ -197,7 +198,16 @@ func (h *Handlers) MediaHandler(w http.ResponseWriter, r *http.Request) {
 
 // ScanHandler handles the media scan request
 func (h *Handlers) ScanHandler(w http.ResponseWriter, r *http.Request) {
-	go ScanMedia()
+	moviesDir := os.Getenv("MOVIES_DIR")
+	if moviesDir == "" {
+		moviesDir = "./media/movies" // Default to a local path
+	}
+	tvDir := os.Getenv("TV_DIR")
+	if tvDir == "" {
+		tvDir = "./media/tv" // Default to a local path
+	}
+
+	go ScanMedia(h.repo, moviesDir, tvDir)
 	w.WriteHeader(http.StatusAccepted)
 }
 
