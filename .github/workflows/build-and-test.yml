@@ -32,5 +32,5 @@ jobs:
     - name: Build
       run: ./build.sh
 
-    - name: Run tests (excluding media)
-      run: go test ./... -v -short -run 'Test[^M]'
+    - name: Run all tests
+      run: go test ./... -v
