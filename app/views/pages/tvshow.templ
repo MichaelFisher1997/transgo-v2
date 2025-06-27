@@ -1,12 +1,18 @@
 package pages
 
 import (
-	"app/views/layouts"
-	"app/models"
+	"transogov2/app/views/layouts"
+	"transogov2/app/models"
 	"fmt"
 )
 
 templ TVShow(tvshow models.TVShow, seasons []models.Season) {
+	if tvshow.Title == "" {
+		tvshow.Title = "Untitled"
+	}
+	if seasons == nil {
+		seasons = []models.Season{}
+	}
 	@layouts.Base(tvshowContent(tvshow, seasons))
 }
 
