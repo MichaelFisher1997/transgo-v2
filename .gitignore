@@ -11,3 +11,32 @@ app/views/**/*_templ.go
 myapp
 app/app
 app/transogo
+
+# Terraform files
+**/.terraform/*
+**/.terraform.lock.hcl
+**/terraform.tfstate
+**/terraform.tfstate.backup
+**/terraform.tfvars
+**/override.tf
+**/override.tf.json
+**/*.tfvars
+**/*.tfvars.json
+
+# Local .terraform directories
+**/.terraform/
+
+# Crash log files
+crash.log
+
+# Exclude all .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Ignore CLI configuration files
+.terraformrc
+terraform.rc
+
+# Ignore IDE files
+.idea/
+.vscode/
