@@ -32,7 +32,12 @@ RUN mkdir -p /app/media /app/static /app/views
 
 # Copy the binary and embedded files from builder
 COPY --from=builder /build/transogo .
-COPY --from=builder /build/app/static /app/static
+
+# Create static directory if it doesn't exist in builder
+RUN mkdir -p /build/app/static
+
+# Copy files (will skip if source doesn't exist)
+COPY --from=builder /build/app/static /app/static || true
 COPY --from=builder /build/app/views /app/views
 
 # Set environment variables
