@@ -1,0 +1,16 @@
+{
+  "required_status_checks": {
+    "strict": true,
+    "contexts": ["build-and-test"]
+  },
+  "enforce_admins": true,
+  "required_pull_request_reviews": {
+    "required_approving_review_count": 1
+  },
+  "restrictions": {
+    "users": [],
+    "teams": []
+  },
+  "allow_force_pushes": false,
+  "allow_deletions": false
+}
