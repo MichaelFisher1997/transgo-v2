@@ -5,8 +5,10 @@ This project is currently in active development. Expect:
 - Breaking changes
 - Missing features
 - Potential instability
+- Planned features may change significantly
 
-We welcome contributors and early testers, but please don't use in production yet.
+We welcome contributors and early testers, but please don't use in production yet.  
+All feature plans are tentative and subject to change as development progresses.
 
 A modern media management system with powerful encoding capabilities.
 
