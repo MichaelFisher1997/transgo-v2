@@ -10,7 +10,11 @@
     "require_code_owner_reviews": true,
     "require_last_push_approval": false
   },
-  "restrictions": null,
+  "restrictions": {
+    "users": [],
+    "teams": [],
+    "apps": []
+  },
   "allow_force_pushes": false,
   "allow_deletions": false
 }
