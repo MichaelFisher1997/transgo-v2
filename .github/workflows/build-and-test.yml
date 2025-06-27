@@ -26,6 +26,9 @@ jobs:
         chmod +x tailwindcss-linux-x64
         mv tailwindcss-linux-x64 /usr/local/bin/tailwindcss
 
+    - name: Create CSS directory
+      run: mkdir -p app/static/css && touch app/static/css/styles.css
+
     - name: Build
       run: ./build.sh
 
