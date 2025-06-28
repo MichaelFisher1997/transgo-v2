@@ -50,15 +50,35 @@ jobs:
             echo "Creating package.json..."
             npm init -y
           fi
-          npm install -D tailwindcss postcss autoprefixer
-          npx tailwindcss init -p
+          npm install -D tailwindcss@latest postcss@latest autoprefixer@latest
+          # Create Tailwind config manually instead of using init
+          cat > tailwind.config.js << 'EOF'
+          /** @type {import('tailwindcss').Config} */
+          module.exports = {
+            content: ["./views/**/*.{html,js,templ}"],
+            theme: {
+              extend: {},
+            },
+            plugins: [],
+          }
+          EOF
+          # Create PostCSS config
+          cat > postcss.config.js << 'EOF'
+          module.exports = {
+            plugins: {
+              tailwindcss: {},
+              autoprefixer: {},
+            },
+          }
+          EOF
           # Create Tailwind CSS file if it doesn't exist
           if [ ! -f ./static/css/styles.css ]; then
             echo "@tailwind base;" > ./static/css/styles.css
             echo "@tailwind components;" >> ./static/css/styles.css
             echo "@tailwind utilities;" >> ./static/css/styles.css
           fi
-          npx tailwindcss -i ./static/css/styles.css -o ./static/css/output.css
+          # Build CSS using npx with explicit path
+          ./node_modules/.bin/tailwindcss -i ./static/css/styles.css -o ./static/css/output.css --minify
           cd ..
           touch app/static/.gitkeep
           chmod -R 755 app/static
