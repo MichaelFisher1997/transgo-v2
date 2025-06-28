@@ -20,8 +20,14 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: '1.24'
-      - run: go build ./...
-      - run: go test ./...
+      - name: Install templ
+        run: go install github.com/a-h/templ/cmd/templ@latest
+      - name: Generate templates
+        run: cd app && templ generate -path ./views && cd ..
+      - name: Build
+        run: go build ./...
+      - name: Test
+        run: go test ./...
 
       - name: Check for AWS Credentials
         id: check-aws-creds
