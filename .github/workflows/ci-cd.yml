@@ -77,8 +77,16 @@ jobs:
             echo "@tailwind components;" >> ./static/css/styles.css
             echo "@tailwind utilities;" >> ./static/css/styles.css
           fi
-          # Build CSS using npx with explicit path
-          ./node_modules/.bin/tailwindcss -i ./static/css/styles.css -o ./static/css/output.css --minify
+          # Build CSS using npx with fallback
+          echo "Checking for tailwindcss binary..."
+          ls -la node_modules/.bin/ || echo "node_modules/.bin/ not found"
+          if [ -f "./node_modules/.bin/tailwindcss" ]; then
+            echo "Using local binary"
+            ./node_modules/.bin/tailwindcss -i ./static/css/styles.css -o ./static/css/output.css --minify
+          else
+            echo "Using npx"
+            npx --yes tailwindcss -i ./static/css/styles.css -o ./static/css/output.css --minify
+          fi
           cd ..
           touch app/static/.gitkeep
           chmod -R 755 app/static
