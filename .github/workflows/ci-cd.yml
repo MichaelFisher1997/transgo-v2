@@ -32,6 +32,7 @@ jobs:
         run: |
           mkdir -p app/static/css
           cd app
+          npm install tailwindcss postcss autoprefixer
           npx tailwindcss -i ./static/css/styles.css -o ./static/css/output.css
           cd ..
           touch app/static/.gitkeep
