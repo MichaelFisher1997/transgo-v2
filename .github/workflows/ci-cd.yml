@@ -22,7 +22,7 @@ jobs:
           go-version: '1.24'
 
       - name: Build, tag, and push Docker image
-        uses: ./.github/workflows/reusable-docker-build-push
+        uses: ./.github/workflows/reusable-docker-build-push.yml
         with:
           ecr_repository_name: ${{ env.BRANCH_NAME }} # Using branch name for ECR repo
           image_tag: ${{ github.sha }}
@@ -37,7 +37,7 @@ jobs:
 
       - name: Deploy Infrastructure
         id: terraform-deploy
-        uses: ./.github/workflows/reusable-terraform-deploy
+        uses: ./.github/workflows/reusable-terraform-deploy.yml
         with:
           aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -46,7 +46,7 @@ jobs:
           terraform_config_path: infra/terraform/environments/${{ env.BRANCH_NAME }}
 
       - name: Deploy to ECS
-        uses: ./.github/workflows/reusable-ecs-deploy
+        uses: ./.github/workflows/reusable-ecs-deploy.yml
         with:
           cluster_name: transgo-cluster-${{ env.BRANCH_NAME }}
           service_name: transgo-service
