@@ -43,3 +43,11 @@ jobs:
       - name: Push image to Amazon ECR
         run: |
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Update ECS service
+        run: |
+          aws ecs update-service \
+            --cluster transgo-cluster-dev \
+            --service transgo-service \
+            --task-definition transgo-task \
+            --force-new-deployment
