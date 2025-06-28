@@ -2,102 +2,82 @@
 
 This directory contains GitHub Actions workflows that automate our build, test, and deployment processes.
 
-## Workflows Overview
+## Current Workflow Structure
 
-1. **build-and-test.yml** - Runs tests and builds the application
-2. **container-build.yml** - Builds and pushes Docker containers
-3. **deploy-dev.yml** - Deploys to development environment
-4. **terraform-deploy.yml** - Manages infrastructure with Terraform
-5. **app-deploy.yml** - Handles application deployments to different environments
+**ci-cd.yml** - Comprehensive CI/CD pipeline that handles all build, test, and deployment operations
 
-## Detailed Workflow Documentation
+## Workflow Overview
 
-### 1. build-and-test.yml
+### ci-cd.yml
 
-**Purpose**: Runs unit tests and builds the application
+**Purpose**: Complete CI/CD pipeline for the TransGo application
 
 **Triggers**:
-- Push to main or test branches
-- Pull requests to main or test branches
+- Push to any branch (`**`)
 
-**Key Jobs**:
-- Sets up Go environment
-- Installs templ and TailwindCSS
-- Runs all Go tests with PostgreSQL test database
-- Executes build script
+**Key Features**:
+- **Smart AWS Detection**: Automatically detects AWS credentials and runs appropriate mode:
+  - With AWS credentials: Full build, test, Docker build, push to ECR, Terraform deploy, ECS deployment
+  - Without AWS credentials: Local test mode (build and test only)
 
-### 2. container-build.yml
+**Pipeline Steps**:
 
-**Purpose**: Builds and pushes Docker containers to ECR
+1. **Setup Phase**:
+   - Checkout code
+   - Extract branch name for environment-specific deployments
+   - Setup Go 1.24 with module caching
+   - Install templ for template generation
+   - Setup Node.js 18
 
-**Triggers**:
-- Push to dev branch with changes to:
-  - app/ directory
-  - Dockerfile
-  - build.sh
-  - docker-compose.yml
+2. **Build Phase**:
+   - Create static CSS files (basic styling)
+   - Generate Go templates from .templ files
+   - Build Go application
+   - Run all tests
 
-**Key Jobs**:
-- Builds and tags Docker image
-- Pushes to Amazon ECR
-- Registers ECS task definition
-- Updates ECS service
+3. **AWS Deployment Phase** (only if AWS credentials available):
+   - Configure AWS credentials
+   - Login to Amazon ECR
+   - Build and push Docker image with proper tagging
+   - Create branch-specific Terraform environment
+   - Initialize and apply Terraform configuration
+   - Deploy to ECS with service stability wait
 
-### 3. deploy-dev.yml
+**Environment Handling**:
+- Branch names are sanitized (slashes converted to dashes)
+- Each branch gets its own ECR repository: `transgo-{branch-name}`
+- Each branch gets its own ECS cluster: `transgo-cluster-{branch-name}`
+- Terraform environments are created dynamically from template
 
-**Purpose**: Deploys to development environment
-
-**Triggers**:
-- Push to main or dev branches
-- Manual trigger via workflow_dispatch
-
-**Key Jobs**:
-- Builds and pushes Docker image to ECR
-- Registers new task definition
-- Deploys to ECS with force-new-deployment
-- Outputs ALB DNS name
-
-### 4. terraform-deploy.yml
-
-**Purpose**: Manages infrastructure with Terraform
-
-**Triggers**:
-- Push to main or dev branches with changes to infra/terraform/**
-
-**Key Jobs**:
-- Terraform init, plan, and apply
-- Auto-applies on dev branch
-- Requires manual approval for prod
-
-### 5. app-deploy.yml
-
-**Purpose**: Handles application deployments
-
-**Triggers**:
-- Push to main, dev, or test branches with changes to:
-  - app/ directory
-  - Dockerfile
-  - go.mod
-
-**Key Jobs**:
-- Test environment: Runs tests and deploys to test cluster
-- Dev/Prod: Builds and deploys to respective environments
-- Uses different ECS clusters based on branch
-
-## Common Configuration
+**Docker Image Tagging**:
+- SHA tag: `{registry}/transgo-{branch}:{commit-sha}`
+- Latest tag: `{registry}/transgo-{branch}:latest`
 
 **Required Secrets**:
-- AWS_ACCESS_KEY_ID
-- AWS_SECRET_ACCESS_KEY
+- `AWS_ACCESS_KEY_ID` (optional - enables AWS deployment)
+- `AWS_SECRET_ACCESS_KEY` (optional - enables AWS deployment)
 
 **Environment Variables**:
-- AWS_REGION: us-east-1
-- ECR_REPOSITORY: transgo-dev
-- ECS cluster/service names vary by environment
+- `AWS_REGION`: us-east-1
+- `BRANCH_NAME`: Automatically extracted from git ref
 
-## Workflow Dependencies
+## Workflow Benefits
 
-1. build-and-test.yml runs first on code changes
-2. container-build.yml creates Docker images
-3. deploy-dev.yml/app-deploy.yml handle deployments
-4. terraform-deploy.yml manages infrastructure
+1. **Single Source of Truth**: One workflow handles all CI/CD operations
+2. **Environment Flexibility**: Works locally without AWS credentials for testing
+3. **Branch-based Deployments**: Each branch gets its own isolated environment
+4. **Modern Actions**: Uses latest versions of all GitHub Actions
+5. **Efficient Caching**: Go modules are cached for faster builds
+6. **Error Handling**: Comprehensive error handling and conditional execution
+
+## Migration Notes
+
+This workflow replaces the following deprecated workflows:
+- `build-and-test.yml` - Build and test functionality integrated
+- `container-build.yml` - Docker build/push functionality integrated  
+- `deploy-dev.yml` - Deployment functionality integrated
+- `app-deploy.yml` - Application deployment functionality integrated
+- `terraform-deploy.yml` - Terraform deployment functionality integrated
+- All `reusable-*.yml` workflows - No longer needed with consolidated approach
+
+The new approach provides better maintainability, reduces duplication, and ensures consistent behavior across all environments.
