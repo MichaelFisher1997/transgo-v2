@@ -22,8 +22,17 @@ jobs:
           go-version: '1.24'
       - name: Install templ
         run: go install github.com/a-h/templ/cmd/templ@latest
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
       - name: Generate templates
         run: cd app && templ generate -path ./views && cd ..
+      - name: Generate Tailwind CSS
+        run: |
+          cd app
+          npx tailwindcss -i ./static/css/styles.css -o ./static/css/output.css
+          cd ..
       - name: Build
         run: go build ./...
       - name: Test
