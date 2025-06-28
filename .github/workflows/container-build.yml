@@ -10,7 +10,7 @@ on:
 
 env:
   ECR_REGISTRY: 948845146147.dkr.ecr.us-east-1.amazonaws.com
-  ECR_REPOSITORY: transogov2-app
+  ECR_REPOSITORY: transgo-dev
   IMAGE_TAG: dev-${{ github.sha }}
 
 jobs:
@@ -37,8 +37,8 @@ jobs:
 
       - name: Build and tag the image
         run: |
-          docker build -t transogov2-app .
-          docker tag transogov2-app $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker build -t transgo-dev .
+          docker tag transgo-dev $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
       - name: Push image to Amazon ECR
         run: |
