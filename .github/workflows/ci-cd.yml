@@ -18,7 +18,7 @@ jobs:
         run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | tr '/' '-')" >> $GITHUB_ENV
 
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: '1.24'
           cache: true
@@ -30,9 +30,11 @@ jobs:
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'app/package-lock.json'
       
       - name: Verify Node installation
         run: |
@@ -64,8 +66,6 @@ jobs:
           chmod -R 755 app/static
       - name: Generate templates
         run: cd app && templ generate -path ./views && cd ..
-      - name: Generate templates
-        run: cd app && templ generate -path ./views && cd ..
       - name: Build
         run: ls && go build ./...
       - name: Test
@@ -89,12 +89,11 @@ jobs:
         if: steps.check-aws-creds.outputs.has_creds == 'false'
         run: |
           echo "Running in local test mode - skipping AWS deployment steps"
-          go build ./...
-          go test ./...
+          echo "Build and test completed successfully"
 
       - name: Configure AWS credentials
         if: steps.check-aws-creds.outputs.has_creds == 'true'
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID || env.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY || env.AWS_SECRET_ACCESS_KEY }}
@@ -103,15 +102,15 @@ jobs:
       - name: Login to Amazon ECR
         if: steps.check-aws-creds.outputs.has_creds == 'true'
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build, tag, and push Docker image
         if: steps.check-aws-creds.outputs.has_creds == 'true'
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ${{ env.BRANCH_NAME }}:${{ github.sha }}
+          tags: ${{ steps.login-ecr.outputs.registry }}/transgo-${{ env.BRANCH_NAME }}:${{ github.sha }},${{ steps.login-ecr.outputs.registry }}/transgo-${{ env.BRANCH_NAME }}:latest
           file: ./Dockerfile
 
       - name: Create Terraform environment directory
@@ -122,7 +121,7 @@ jobs:
 
       - name: Setup Terraform
         if: steps.check-aws-creds.outputs.has_creds == 'true'
-        uses: hashicorp/setup-terraform@v2
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.6.0
 
