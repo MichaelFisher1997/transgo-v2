@@ -44,28 +44,24 @@ jobs:
         run: |
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-      - name: Register or update ECS task definition
+      - name: Register ECS task definition
         run: |
-          # Check if task definition exists
-          if ! aws ecs describe-task-definition --task-definition transgo-task >/dev/null 2>&1; then
-            echo "Task definition not found, creating new one"
-            aws ecs register-task-definition \
-              --family transgo-task \
-              --network-mode awsvpc \
-              --requires-compatibilities FARGATE \
-              --cpu 256 \
-              --memory 512 \
-              --execution-role-arn ecsTaskExecutionRole \
-              --container-definitions '[{
-                "name": "transgo-app",
-                "image": "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG",
-                "essential": true,
-                "portMappings": [{
-                  "containerPort": 80,
-                  "hostPort": 80
-                }]
-              }]'
-          fi
+          aws ecs register-task-definition \
+            --family transgo-task \
+            --network-mode awsvpc \
+            --requires-compatibilities FARGATE \
+            --cpu 256 \
+            --memory 512 \
+            --execution-role-arn ecsTaskExecutionRole \
+            --container-definitions '[{
+              "name": "transgo-app",
+              "image": "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG",
+              "essential": true,
+              "portMappings": [{
+                "containerPort": 80,
+                "hostPort": 80
+              }]
+            }]'
 
       - name: Update ECS service
         run: |
