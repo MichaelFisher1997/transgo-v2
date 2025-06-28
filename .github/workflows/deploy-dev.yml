@@ -2,7 +2,7 @@ name: Deploy to Dev Environment
 
 on:
   push:
-    branches: [ main, dev ]
+    branches: [ main, test ]
   workflow_dispatch:
 
 env:
