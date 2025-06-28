@@ -35,9 +35,21 @@ jobs:
           cache: 'npm'
           cache-dependency-path: app/package-lock.json
       
+      - name: Verify Node installation
+        run: |
+          echo "Node version: $(node --version)"
+          echo "npm version: $(npm --version)"
+          echo "PATH: $PATH"
+      
       - name: Install Node dependencies
         working-directory: app
-        run: npm ci
+        run: |
+          if ! command -v npm &> /dev/null; then
+            echo "npm not found! Reinstalling Node.js"
+            curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+          fi
+          npm ci
       - name: Generate templates
         run: cd app && templ generate -path ./views && cd ..
       - name: Setup Static Files
