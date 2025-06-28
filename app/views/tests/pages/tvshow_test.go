@@ -2,9 +2,11 @@ package pages_test
 
 import (
 	"testing"
-	"transogov2/app/models"
-	"transogov2/app/views/pages"
-	"transogov2/app/views/tests/testutils"
+
+	"github.com/MichaelFisher1997/transgo-v2/app/views/tests/testutils"
+
+	"github.com/MichaelFisher1997/transgo-v2/app/models"
+	"github.com/MichaelFisher1997/transgo-v2/app/views/pages"
 
 	"github.com/stretchr/testify/assert"
 )

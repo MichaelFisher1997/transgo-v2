@@ -2,7 +2,8 @@ package main
 
 import (
 	"context"
-	"transogov2/app/models"
+
+	"github.com/MichaelFisher1997/transgo-v2/app/models"
 )
 
 // Repository defines the methods for database operations

@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"transogov2/app/models"
-	"transogov2/app/views/pages"
+	"github.com/MichaelFisher1997/transgo-v2/app/models"
+	"github.com/MichaelFisher1997/transgo-v2/app/views/pages"
 )
 
 // Handlers holds the repository dependencies

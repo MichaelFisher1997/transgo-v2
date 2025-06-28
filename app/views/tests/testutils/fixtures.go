@@ -3,7 +3,8 @@ package testutils
 import (
 	"database/sql"
 	"fmt"
-	"transogov2/app/models"
+
+	"github.com/MichaelFisher1997/transgo-v2/app/models"
 )
 
 // MockTVShow creates a TVShow model with test data

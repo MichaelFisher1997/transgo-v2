@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"transogov2/app/models"
+	"github.com/MichaelFisher1997/transgo-v2/app/models"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"

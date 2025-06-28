@@ -47,7 +47,7 @@ RUN mkdir -p static/css && \
 RUN cd app && templ generate -path ./views && cd ..
 
 # Build a static binary (disable VCS stamping since we don't have full git repo in container)
-RUN CGO_ENABLED=0 GOOS=linux go build -buildvcs=false -o transogo transogov2/app
+RUN CGO_ENABLED=0 GOOS=linux go build -buildvcs=false -o transogo github.com/MichaelFisher1997/transgo-v2/app
 
 # Runtime stage - use ubuntu for better compatibility
 FROM ubuntu:22.04
