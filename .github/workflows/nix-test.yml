@@ -1,7 +1,7 @@
 name: nixos-deployment
 on:
   push:
-    branches: [ main, test ]
+    branches: [ main, dev ]
   workflow_dispatch:
 jobs:
   deploy:
