@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles */
+.transition-colors {
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+}
+
+/* Smooth dark mode transitions */
+html {
+    @apply transition-colors;
+}
+
+body {
+    @apply transition-colors;
+}
+
+/* Basic dark mode styling */
+html.dark body {
+    background-color: #1f2937; /* Dark background */
+    color: #f3f4f6; /* Light text */
+}
+
+/* Image hover effects */
+img {
+    @apply transition-transform duration-300 ease-in-out;
+}
+
+a:hover img {
+    @apply transform scale-105;
+}
+
+/* Button styles */
+.btn {
+    @apply px-4 py-2 rounded-md font-medium transition-colors;
+}
+
+.btn-primary {
+    @apply bg-blue-600 text-white hover:bg-blue-700;
+}
+
+.btn-secondary {
+    @apply bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600;
+}
