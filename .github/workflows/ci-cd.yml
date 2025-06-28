@@ -17,38 +17,94 @@ jobs:
         run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | tr '/' '-')" >> $GITHUB_ENV
 
       - name: Build and Test
-        uses: ./.github/workflows/reusable-build-test.yml
+        uses: actions/setup-go@v4
         with:
           go-version: '1.24'
+      - run: go build ./...
+      - run: go test ./...
+
+      - name: Check for AWS Credentials
+        id: check-aws-creds
+        run: |
+          if [ -n "$AWS_ACCESS_KEY_ID" ] && [ -n "$AWS_SECRET_ACCESS_KEY" ]; then
+            echo "AWS credentials detected"
+            echo "has_creds=true" >> $GITHUB_OUTPUT
+          elif [ -n "${{ secrets.AWS_ACCESS_KEY_ID }}" ] && [ -n "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]; then
+            echo "GitHub secrets detected"
+            echo "has_creds=true" >> $GITHUB_OUTPUT
+          else
+            echo "No AWS credentials found - running in local test mode"
+            echo "has_creds=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build and Test Only
+        if: steps.check-aws-creds.outputs.has_creds == 'false'
+        run: |
+          echo "Running in local test mode - skipping AWS deployment steps"
+          go build ./...
+          go test ./...
+
+      - name: Configure AWS credentials
+        if: steps.check-aws-creds.outputs.has_creds == 'true'
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID || env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY || env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        if: steps.check-aws-creds.outputs.has_creds == 'true'
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
 
       - name: Build, tag, and push Docker image
-        uses: ./.github/workflows/reusable-docker-build-push.yml
+        if: steps.check-aws-creds.outputs.has_creds == 'true'
+        uses: docker/build-push-action@v4
         with:
-          ecr_repository_name: ${{ env.BRANCH_NAME }} # Using branch name for ECR repo
-          image_tag: ${{ github.sha }}
-          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws_region: us-east-1
+          context: .
+          push: true
+          tags: ${{ env.BRANCH_NAME }}:${{ github.sha }}
+          file: ./Dockerfile
 
       - name: Create Terraform environment directory
+        if: steps.check-aws-creds.outputs.has_creds == 'true'
         run: |
           mkdir -p infra/terraform/environments/${{ env.BRANCH_NAME }}
           cp infra/terraform/environments/template/* infra/terraform/environments/${{ env.BRANCH_NAME }}/
 
-      - name: Deploy Infrastructure
-        id: terraform-deploy
-        uses: ./.github/workflows/reusable-terraform-deploy.yml
+      - name: Setup Terraform
+        if: steps.check-aws-creds.outputs.has_creds == 'true'
+        uses: hashicorp/setup-terraform@v2
         with:
-          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws_region: us-east-1
-          branch_name: ${{ env.BRANCH_NAME }}
-          terraform_config_path: infra/terraform/environments/${{ env.BRANCH_NAME }}
+          terraform_version: 1.6.0
+
+      - name: Terraform Init
+        if: steps.check-aws-creds.outputs.has_creds == 'true'
+        run: |
+          cd infra/terraform/environments/${{ env.BRANCH_NAME }}
+          terraform init
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1
+
+      - name: Terraform Apply
+        if: steps.check-aws-creds.outputs.has_creds == 'true'
+        id: terraform-deploy
+        run: |
+          cd infra/terraform/environments/${{ env.BRANCH_NAME }}
+          terraform apply -auto-approve
+          echo "task_definition_arn=$(terraform output -raw task_definition_arn)" >> $GITHUB_OUTPUT
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1
 
       - name: Deploy to ECS
-        uses: ./.github/workflows/reusable-ecs-deploy.yml
+        if: steps.check-aws-creds.outputs.has_creds == 'true'
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
-          cluster_name: transgo-cluster-${{ env.BRANCH_NAME }}
-          service_name: transgo-service
-          task_definition_arn: ${{ steps.terraform-deploy.outputs.task_definition_arn }} # This will come from terraform output
-          image_uri: ${{ env.IMAGE_URI }} # This will be set by docker-build-push.yml
+          task-definition: ${{ steps.terraform-deploy.outputs.task_definition_arn }}
+          service: transgo-service
+          cluster: transgo-cluster-${{ env.BRANCH_NAME }}
+          wait-for-service-stability: true
