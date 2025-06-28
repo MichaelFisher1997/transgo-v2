@@ -10,8 +10,8 @@ import (
 //go:embed views
 var viewsFS embed.FS
 
-// Static file directory
-const staticDir = "./static"
+//go:embed static
+var staticFS embed.FS
 
 func main() {
 	// Load database configuration
@@ -33,7 +33,20 @@ func main() {
 	// Setup HTTP routes
 	mux := http.NewServeMux()
 
+	// Serve static files first
+	mux.Handle("/static/", http.FileServer(http.FS(staticFS)))
+
 	// Application routes
+	mux.HandleFunc("GET /movies", handlers.MoviesHandler)
+	mux.HandleFunc("GET /tvshows", handlers.TVShowsHandler)
+	mux.HandleFunc("GET /tvshow/{id}/season/{seasonNum}", handlers.SeasonHandler)
+	mux.HandleFunc("GET /tvshow/{id}", handlers.TVShowHandler)
+	mux.HandleFunc("GET /media/{id}", handlers.MediaHandler)
+	mux.HandleFunc("POST /scan", handlers.ScanHandler)
+	mux.HandleFunc("GET /hello", handlers.HelloHandler)
+	mux.HandleFunc("GET /standalone", handlers.StandaloneHandler)
+
+	// Handle root route
 	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
@@ -45,17 +58,18 @@ func main() {
 		}
 		handlers.LibraryHandler(w, r)
 	}))
-	mux.HandleFunc("GET /movies", handlers.MoviesHandler)
 
-	// Serve static files directly from filesystem
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))
-	mux.HandleFunc("GET /tvshows", handlers.TVShowsHandler)
-	mux.HandleFunc("GET /tvshow/{id}/season/{seasonNum}", handlers.SeasonHandler)
-	mux.HandleFunc("GET /tvshow/{id}", handlers.TVShowHandler)
-	mux.HandleFunc("GET /media/{id}", handlers.MediaHandler)
-	mux.HandleFunc("POST /scan", handlers.ScanHandler)
-	mux.HandleFunc("GET /hello", handlers.HelloHandler)
-	mux.HandleFunc("GET /standalone", handlers.StandaloneHandler)
+	// Automatically trigger a scan on startup
+	moviesDir := os.Getenv("MOVIES_DIR")
+	if moviesDir == "" {
+		moviesDir = "./media/movies" // Default to a local path
+	}
+	tvDir := os.Getenv("TV_DIR")
+	if tvDir == "" {
+		tvDir = "./media/tv" // Default to a local path
+	}
+	log.Println("Initiating media scan on startup...")
+	go ScanMedia(repo, moviesDir, tvDir)
 
 	// Start the server
 	port := os.Getenv("PORT")

@@ -1,0 +1,54 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - '**' # Trigger on push to any branch
+
+jobs:
+  build-test-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get branch name
+        id: get-branch
+        run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | tr '/' '-')" >> $GITHUB_ENV
+
+      - name: Build and Test
+        uses: ./.github/workflows/reusable-build-test.yml
+        with:
+          go-version: '1.24'
+
+      - name: Build, tag, and push Docker image
+        uses: ./.github/workflows/reusable-docker-build-push.yml
+        with:
+          ecr_repository_name: ${{ env.BRANCH_NAME }} # Using branch name for ECR repo
+          image_tag: ${{ github.sha }}
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_region: us-east-1
+
+      - name: Create Terraform environment directory
+        run: |
+          mkdir -p infra/terraform/environments/${{ env.BRANCH_NAME }}
+          cp infra/terraform/environments/template/* infra/terraform/environments/${{ env.BRANCH_NAME }}/
+
+      - name: Deploy Infrastructure
+        id: terraform-deploy
+        uses: ./.github/workflows/reusable-terraform-deploy.yml
+        with:
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_region: us-east-1
+          branch_name: ${{ env.BRANCH_NAME }}
+          terraform_config_path: infra/terraform/environments/${{ env.BRANCH_NAME }}
+
+      - name: Deploy to ECS
+        uses: ./.github/workflows/reusable-ecs-deploy.yml
+        with:
+          cluster_name: transgo-cluster-${{ env.BRANCH_NAME }}
+          service_name: transgo-service
+          task_definition_arn: ${{ steps.terraform-deploy.outputs.task_definition_arn }} # This will come from terraform output
+          image_uri: ${{ env.IMAGE_URI }} # This will be set by docker-build-push.yml

@@ -22,7 +22,7 @@ RUN for i in 1 2 3; do \
         (echo "Attempt $i failed, retrying..." && sleep 5); \
     done || \
     (echo "Falling back to direct download" && \
-     curl -sL https://github.com/a-h/templ/releases/latest/download/templ_linux_amd64.tar.gz | tar xz -C /usr/local/bin)
+     curl -sL https://github.com/tailwindlabs/tailwindcss/releases/latest/download/templ_linux_amd64.tar.gz | tar xz -C /usr/local/bin)
 
 # Install tailwindcss
 RUN curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-linux-x64 && \
@@ -32,13 +32,16 @@ RUN curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/latest/downlo
 # Copy source files
 COPY app/ ./app/
 
+# Copy static directory to root for embedding
+COPY app/static ./static
+
 # Copy Tailwind config
 COPY tailwind.config.js ./
 
-# Generate static assets
-RUN mkdir -p app/static/css && \
-    echo "@tailwind base; @tailwind components; @tailwind utilities;" > app/static/css/styles.css && \
-    tailwindcss -i app/static/css/styles.css -o app/static/css/output.css
+# Generate static assets (now in ./static/css)
+RUN mkdir -p static/css && \
+    echo "@tailwind base; @tailwind components; @tailwind utilities;" > static/css/styles.css && \
+    tailwindcss -i static/css/styles.css -o static/css/output.css
 
 # Generate templ files
 RUN cd app && templ generate -path ./views && cd ..
@@ -51,16 +54,14 @@ FROM ubuntu:22.04
 WORKDIR /app
 
 # Create necessary directories
-RUN mkdir -p /app/media /app/static /app/views
+RUN mkdir -p /app/media /app/views
 
 # Copy the binary and embedded files from builder
 COPY --from=builder /build/transogo .
 
-# Create static directory if it doesn't exist in builder
-RUN mkdir -p /build/app/static
-
-# Copy files (skip if source doesn't exist)
-RUN if [ -d /build/app/static ]; then cp -r /build/app/static /app/static; fi
+# With go:embed, static files are part of the binary, no need to copy them explicitly
+# COPY --from=builder /build/app/static/css/output.css /app/static/css/output.css
+# COPY --from=builder /build/app/static/images/placeholder.png /app/static/images/placeholder.png
 COPY --from=builder /build/app/views /app/views
 
 # Set environment variables

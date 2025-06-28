@@ -2,6 +2,18 @@
 
 This project is a personal media library application that allows users to explore their movies and TV shows.
 
+## Current Status (Last Updated: 2025-06-28)
+
+* **CI/CD Pipeline Documentation Completed**
+  - Documented all 5 GitHub Actions workflows
+  - Created workflow README.md in .github/workflows/
+  - Clarified deployment process for DEV environment
+
+* **Next Steps:**
+  - Test full deployment workflow from scratch
+  - Verify infrastructure provisioning via terraform-deploy.yml
+  - Validate application deployment via container-build.yml
+
 ## Key Features and Changes:
 
 * **TV Show Component Testing:**

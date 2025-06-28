@@ -12,7 +12,8 @@ services:
       - ./app/static:/app/static:ro
       - ./app/views:/app/views:ro
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     environment:
       - DB_HOST=postgres
       - DB_PORT=5432
@@ -29,8 +30,14 @@ services:
       - POSTGRES_DB=transgo
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./app/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
