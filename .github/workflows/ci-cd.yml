@@ -28,11 +28,13 @@ jobs:
           node-version: '18'
       - name: Generate templates
         run: cd app && templ generate -path ./views && cd ..
-      - name: Generate Tailwind CSS
+      - name: Setup Static Files
         run: |
+          mkdir -p app/static/css
           cd app
           npx tailwindcss -i ./static/css/styles.css -o ./static/css/output.css
           cd ..
+          touch app/static/.gitkeep
       - name: Build
         run: ls && go build ./...
       - name: Test
