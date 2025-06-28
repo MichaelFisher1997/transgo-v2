@@ -1,72 +1,58 @@
 {
-  description = "Development environment for transogov2";
+  description = "Nix flake for Go + templ + Tailwind build";
 
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
+
+  outputs = { self, nixpkgs }: let
+    system = "x86_64-linux";
+    pkgs = import nixpkgs { inherit system; };
+    buildInputs = [
+      pkgs.go
+      pkgs.templ
+      pkgs.nodejs_20
+      pkgs.nodePackages.tailwindcss
+    ];
+  in {
+    packages.${system}.default = pkgs.stdenv.mkDerivation {
+      pname = "transogov2";
+      version = "1.0.0";
+      src = ./.;
+
+      buildInputs = buildInputs;
+
+      buildPhase = ''
+        set -e
+        export GOMODCACHE=$TMPDIR/go-mod-cache
+        export GOPATH=$TMPDIR/go
+
+        echo "Generating templ files..."
+        cd app
+        templ generate -path ./views
+        cd ..
+
+        echo "Building Tailwind CSS..."
+        tailwindcss -i app/static/css/styles.css -o app/static/css/output.css --minify
+
+        echo "Building templ again..."
+        templ generate ./app
+
+        echo "Build Go"
+        go build -o transogov2 ./app
+
+        echo "Running Go tests"
+        cd app && go test -v
+
+        echo "Build done"
+      '';
+
+      installPhase = ''
+        mkdir -p $out/bin
+        cp transogov2 $out/bin/
+        # Optionally install CSS as well:
+        mkdir -p $out/css
+        cp app/static/css/output.css $out/css/
+      '';
+    };
   };
-
-  outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
-      let
-        pkgs = import nixpkgs { inherit system; };
-        app = pkgs.stdenv.mkDerivation {
-          name = "transogov2";
-          src = ./.;
-          vendorSha256 = pkgs.lib.fakeSha256;
-          # Ensure build.sh is properly set up
-          preBuild = ''
-            cp ${./build.sh} build.sh
-            chmod +x build.sh
-            export GOCACHE=$TMPDIR/go-build
-            export GOPATH=$TMPDIR/go
-            mkdir -p $GOCACHE $GOPATH
-          '';
-          
-          buildInputs = with pkgs; [
-            go
-            templ
-            nodejs_20
-            nodePackages.tailwindcss
-          ];
-
-          buildPhase = ''
-            # Set up build environment
-            export GOCACHE=$TMPDIR/go-build
-            export GOPATH=$TMPDIR/go
-            mkdir -p $GOCACHE $GOPATH
-            
-            # Execute build script
-            ./build.sh
-          '';
-          workingDirectory = ./.;
-        };
-      in {
-        packages.default = app;
-
-        devShells.default = pkgs.mkShell {
-          packages = with pkgs; [
-            nodejs_20
-            yarn
-            docker-compose
-            postgresql
-            go
-            templ
-            nodePackages.tailwindcss
-            nodePackages.postcss
-            nodePackages.autoprefixer
-          ];
-
-          shellHook = ''
-            echo "Dev shell ready with:"
-            echo "- Node.js $(node --version)"
-            echo "- Yarn $(yarn --version)"
-            echo "- Docker Compose $(docker-compose --version)"
-            echo "- PostgreSQL $(psql --version)"
-            echo "- Go $(go version)"
-            echo "- tailwindcss $(tailwindcss --version)"
-          '';
-        };
-      }
-    );
 }
+

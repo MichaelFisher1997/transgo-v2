@@ -15,5 +15,5 @@ jobs:
       with:
         nix_path: nixpkgs=channel:nixos-unstable
 
-    - name: Run Morph Nix Deploy
+    - name: Run nix build
       run: nix build 
