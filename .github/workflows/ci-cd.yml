@@ -16,60 +16,27 @@ jobs:
         id: get-branch
         run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | tr '/' '-')" >> $GITHUB_ENV
 
-      - name: Setup Go
-        uses: actions/setup-go@v4
+      - name: Setup Nix
+        uses: cachix/install-nix-action@v20
         with:
-          go-version: '1.24'
-          cache: true
-          cache-dependency-path: go.sum
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            substituters = https://cache.nixos.org https://nix-community.cachix.org
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
       
-      - name: Install templ
+      - name: Run Nix build
         run: |
-          go install github.com/a-h/templ/cmd/templ@latest
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: app/package-lock.json
-      
-      - name: Verify Node installation
-        run: |
-          echo "Node version: $(node --version)"
-          echo "npm version: $(npm --version)"
-          echo "PATH: $PATH"
-      
-      - name: Install Node dependencies
-        working-directory: app
-        run: |
-          if ! command -v npm &> /dev/null; then
-            echo "npm not found! Reinstalling Node.js"
-            curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-            sudo apt-get install -y nodejs
-          fi
-          npm ci
-      - name: Generate templates
-        run: cd app && templ generate -path ./views && cd ..
-      - name: Setup Static Files
-        run: |
-          mkdir -p app/static/css
-          cd app
-          if [ ! -f package.json ]; then
-            npm init -y
-          fi
-          npm install -D tailwindcss postcss autoprefixer
-          npx tailwindcss init -p
-          if [ ! -f ./static/css/styles.css ]; then
-            echo "@tailwind base;" > ./static/css/styles.css
-            echo "@tailwind components;" >> ./static/css/styles.css
-            echo "@tailwind utilities;" >> ./static/css/styles.css
-          fi
-          npx tailwindcss -i ./static/css/styles.css -o ./static/css/output.css
-          cd ..
-          touch app/static/.gitkeep
-          chmod -R 755 app/static
+          nix develop --command bash -c "
+            # Generate static files and templates
+            mkdir -p app/static/css
+            if [ ! -f app/static/css/styles.css ]; then
+              echo '@tailwind base;' > app/static/css/styles.css
+              echo '@tailwind components;' >> app/static/css/styles.css
+              echo '@tailwind utilities;' >> app/static/css/styles.css
+            fi
+            tailwindcss -i app/static/css/styles.css -o app/static/css/output.css
+            templ generate -path app/views
+          "
       - name: Build
         run: ls && go build ./...
       - name: Test
