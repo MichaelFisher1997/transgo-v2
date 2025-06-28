@@ -10,40 +10,7 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
-        app = pkgs.stdenv.mkDerivation {
-          name = "transogov2";
-          src = ./.;
-          vendorSha256 = pkgs.lib.fakeSha256;
-          # Ensure build.sh is properly set up
-          preBuild = ''
-            cp ${./build.sh} build.sh
-            chmod +x build.sh
-            export GOCACHE=$TMPDIR/go-build
-            export GOPATH=$TMPDIR/go
-            mkdir -p $GOCACHE $GOPATH
-          '';
-          
-          buildInputs = with pkgs; [
-            go
-            templ
-            nodejs_20
-            nodePackages.tailwindcss
-          ];
-
-          buildPhase = ''
-            # Set up build environment
-            export GOCACHE=$TMPDIR/go-build
-            export GOPATH=$TMPDIR/go
-            mkdir -p $GOCACHE $GOPATH
-            
-            # Execute build script
-            ./build.sh
-          '';
-          workingDirectory = ./.;
-        };
       in {
-        packages.default = app;
-
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
             nodejs_20
