@@ -17,12 +17,10 @@ jobs:
         run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | tr '/' '-')" >> $GITHUB_ENV
 
       - name: Build and Test
-        uses: ./.github/workflows/reusable-build-test.yml
-        with:
-          go-version: '1.24'
+        uses: ./.github/workflows/reusable-build-test
 
       - name: Build, tag, and push Docker image
-        uses: ./.github/workflows/reusable-docker-build-push.yml
+        uses: ./.github/workflows/reusable-docker-build-push
         with:
           ecr_repository_name: ${{ env.BRANCH_NAME }} # Using branch name for ECR repo
           image_tag: ${{ github.sha }}
@@ -37,7 +35,7 @@ jobs:
 
       - name: Deploy Infrastructure
         id: terraform-deploy
-        uses: ./.github/workflows/reusable-terraform-deploy.yml
+        uses: ./.github/workflows/reusable-terraform-deploy
         with:
           aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -46,7 +44,7 @@ jobs:
           terraform_config_path: infra/terraform/environments/${{ env.BRANCH_NAME }}
 
       - name: Deploy to ECS
-        uses: ./.github/workflows/reusable-ecs-deploy.yml
+        uses: ./.github/workflows/reusable-ecs-deploy
         with:
           cluster_name: transgo-cluster-${{ env.BRANCH_NAME }}
           service_name: transgo-service
