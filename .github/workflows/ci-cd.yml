@@ -37,9 +37,15 @@ jobs:
           fi
           npm install -D tailwindcss postcss autoprefixer
           npx tailwindcss init -p
+          if [ ! -f ./static/css/styles.css ]; then
+            echo "@tailwind base;" > ./static/css/styles.css
+            echo "@tailwind components;" >> ./static/css/styles.css
+            echo "@tailwind utilities;" >> ./static/css/styles.css
+          fi
           npx tailwindcss -i ./static/css/styles.css -o ./static/css/output.css
           cd ..
           touch app/static/.gitkeep
+          chmod -R 755 app/static
       - name: Build
         run: ls && go build ./...
       - name: Test
