@@ -12,6 +12,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Ensure package-lock.json is at root
+        run: |
+          if [ -f app/package-lock.json ]; then
+            cp app/package-lock.json .
+          fi
+          if [ -f app/package.json ]; then
+            cp app/package.json .
+          fi
+
       - name: Get branch name
         id: get-branch
         run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | tr '/' '-')" >> $GITHUB_ENV
@@ -33,7 +42,6 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: app/package-lock.json
       
       - name: Verify Node installation
         run: |
@@ -49,7 +57,7 @@ jobs:
             curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
             sudo apt-get install -y nodejs
           fi
-          npm ci
+          npm install
       - name: Generate templates
         run: cd app && templ generate -path ./views && cd ..
       - name: Setup Static Files
