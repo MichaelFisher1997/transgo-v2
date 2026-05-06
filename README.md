@@ -66,14 +66,30 @@ Start the server:
 Access the web interface at `http://localhost:8080`
 
 ## Development
-Run tests:
+
+Use the hot-reload dev script while building the app:
+
 ```bash
-go test ./... -v
+./dev.sh
 ```
 
-Build assets:
+- Frontend with Vite HMR: `http://localhost:5173`
+- Backend API with source restart: `http://localhost:8080`
+- API calls from Vite are proxied to the backend.
+- Go source changes restart the backend automatically with `go run .`.
+- React/TypeScript changes reload in the browser automatically.
+- Docker is only used for Postgres in development.
+- No manual frontend build, Go binary copy, or production image rebuild is needed during development.
+
+Run tests:
+```bash
+cd backend && go test ./... -v
+```
+
+Production build:
 ```bash
 ./build.sh
+docker compose up --build
 ```
 
 ## License

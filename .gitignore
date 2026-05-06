@@ -1,13 +1,21 @@
 # Ignore media files
 media/
+
 # Ignore environment variables
 .env
 
 # Ignore build artifacts
-app/static/
+transgo
+backend/backend
+backend/transgo
+frontend/dist/
 
 # Ignore generated files
 app/views/**/*_templ.go
-myapp
-app/app
-app/transogo
+app/static/
+
+# Ignore dependencies
+frontend/node_modules/
+
+# Ignore OS files
+.DS_Store

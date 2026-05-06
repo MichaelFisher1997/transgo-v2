@@ -1,45 +1,13 @@
-# Build stage
-FROM golang:1.24-alpine AS builder
-WORKDIR /build
+FROM jellyfin/jellyfin:10.11.6
 
-# Copy go mod files from root for better caching
-COPY go.mod go.sum ./
-
-# Download dependencies
-RUN go mod download
-
-# Force cache bust for app/ directory copy
-COPY ./.git/HEAD ./.git/HEAD.tmp
-
-# Install templ
-RUN go install github.com/a-h/templ/cmd/templ@latest
-
-# Copy source files
-COPY app/ ./app/
-
-# Generate templ files
-RUN cd app && templ generate -path ./views && cd ..
-
-# Build a static binary
-RUN CGO_ENABLED=0 GOOS=linux go build -o transogo transogov2/app
-
-# Runtime stage - use alpine for minimal but complete environment
-FROM alpine:3.22
+USER root
+RUN ln -sf /usr/lib/jellyfin-ffmpeg/ffmpeg /usr/bin/ffmpeg \
+    && ln -s /usr/lib/jellyfin-ffmpeg/ffprobe /usr/bin/ffprobe
+ENV LIBVA_DRIVERS_PATH=/usr/lib/jellyfin-ffmpeg/lib/dri
+ENV LIBVA_DRIVER_NAME=iHD
 WORKDIR /app
-
-# Create necessary directories
-RUN mkdir -p /app/media /app/static /app/views
-
-# Copy the binary and embedded files from builder
-COPY --from=builder /build/transogo .
-COPY --from=builder /build/app/static /app/static
-COPY --from=builder /build/app/views /app/views
-
-# Set environment variables
-ENV PORT=8080
-
-# Expose the application port
-EXPOSE $PORT
-
-# Run the application
-CMD ["./transogo"]
+COPY frontend/dist ./frontend/dist
+COPY transgo .
+EXPOSE 8080
+ENTRYPOINT []
+CMD ["./transgo"]

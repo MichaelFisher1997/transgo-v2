@@ -2,10 +2,16 @@
 
 set -e
 
-echo "Generating templ files..."
-cd app && templ generate -path ./views && cd ..
+echo "Building frontend with Bun..."
+cd frontend
+bun install
+bun run build
+cd ..
 
-echo "Building Tailwind CSS..."
-tailwindcss -i app/static/css/styles.css -o app/static/css/output.css --minify
+echo "Building backend..."
+cd backend
+go mod tidy
+go build -o ../transgo .
+cd ..
 
-echo "Local build complete!"
+echo "Build complete! Run ./transgo to start the server."

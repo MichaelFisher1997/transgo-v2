@@ -1,0 +1,18 @@
+FROM golang:1.24-alpine AS go
+
+FROM jellyfin/jellyfin:10.11.6
+
+USER root
+COPY --from=go /usr/local/go /usr/local/go
+ENV PATH=/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV GOPATH=/go
+ENV GOCACHE=/root/.cache/go-build
+RUN ln -sf /usr/lib/jellyfin-ffmpeg/ffmpeg /usr/bin/ffmpeg \
+    && ln -sf /usr/lib/jellyfin-ffmpeg/ffprobe /usr/bin/ffprobe
+ENV LIBVA_DRIVERS_PATH=/usr/lib/jellyfin-ffmpeg/lib/dri
+ENV LIBVA_DRIVER_NAME=iHD
+
+WORKDIR /app/backend
+
+ENTRYPOINT []
+CMD ["go", "run", "."]

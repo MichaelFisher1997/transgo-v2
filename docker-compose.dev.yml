@@ -1,0 +1,67 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    network_mode: host
+    working_dir: /app/backend
+    volumes:
+      - ./backend:/app/backend
+      - /mnt/BigNAS/Media/Movies:/app/media:rw
+      - go_cache:/go/pkg/mod
+      - go_build_cache:/root/.cache/go-build
+    devices:
+      - /dev/dri:/dev/dri
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - PORT=8080
+      - DB_HOST=127.0.0.1
+      - DB_PORT=5432
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - DB_NAME=${DB_NAME:-media_library}
+      - MEDIA_DIRS=/app/media
+      - ENCODER_CONCURRENCY=3
+      - ENCODER_OUTPUT_SUFFIX=.av1
+    command: /app/backend/dev-watch.sh
+
+  frontend:
+    image: transgo-v2-frontend:latest
+    pull_policy: never
+    network_mode: host
+    working_dir: /app/frontend
+    volumes:
+      - ./frontend:/app/frontend
+      - bun_cache:/root/.bun
+      - frontend_node_modules:/app/frontend/node_modules
+    depends_on:
+      - backend
+    environment:
+      - API_PROXY_TARGET=http://127.0.0.1:8080
+    command: sh -c 'bun install && bun run dev --host 0.0.0.0'
+
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/schema.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    environment:
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
+      - POSTGRES_DB=${DB_NAME:-media_library}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-media_library}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  go_cache:
+  go_build_cache:
+  bun_cache:
+  frontend_node_modules:
